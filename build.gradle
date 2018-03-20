@@ -1,0 +1,28 @@
+plugins {
+  id 'org.springframework.boot' version '1.5.10.RELEASE'
+  id 'java'
+}
+
+group 'sk.bsmk'
+version '0.1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+  mavenCentral()
+  jcenter()
+}
+
+dependencies {
+
+  compile("org.springframework.boot:spring-boot-starter-web")
+
+  testCompile("org.springframework.boot:spring-boot-starter-test")
+  testCompile('com.epages:restdocs-wiremock:0.7.25')
+  testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
+
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '4.6'
+}
