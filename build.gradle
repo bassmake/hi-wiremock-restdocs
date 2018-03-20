@@ -32,7 +32,8 @@ dependencies {
 
   testCompile               "org.springframework.boot:spring-boot-starter-test"
   testCompile               "com.epages:restdocs-wiremock:0.7.25"
-  testCompile               "org.springframework.restdocs:spring-restdocs-mockmvc"
+//  testCompile               "org.springframework.restdocs:spring-restdocs-mockmvc"
+  testCompile               "org.springframework.restdocs:spring-restdocs-restassured"
 
 }
 

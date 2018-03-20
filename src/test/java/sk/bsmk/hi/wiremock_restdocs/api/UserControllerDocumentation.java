@@ -1,82 +1,108 @@
 package sk.bsmk.hi.wiremock_restdocs.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.restassured.builder.RequestSpecBuilder;
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.specification.RequestSpecification;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
+import org.springframework.boot.context.embedded.LocalServerPort;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
+import sk.bsmk.hi.wiremock_restdocs.MainClass;
 
 import static com.epages.restdocs.WireMockDocumentation.wiremockJson;
+import static com.jayway.restassured.RestAssured.given;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.restassured.RestAssuredRestDocumentation.document;
+import static org.springframework.restdocs.restassured.RestAssuredRestDocumentation.documentationConfiguration;
 
 @RunWith(SpringRunner.class)
-@WebMvcTest(UserController.class)
-@AutoConfigureRestDocs(outputDir = "build/generated-snippets")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = MainClass.class)
+//@AutoConfigureRestDocs(outputDir = "build/generated-snippets")
 public class UserControllerDocumentation {
 
-  @Autowired
-  private MockMvc mvc;
+  @LocalServerPort
+  private int port;
 
-  @Autowired
-  private ObjectMapper mapper;
+  @Rule
+  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation("build/generated-snippets");
+
+  private RequestSpecification spec;
+
+  @Before
+  public void setUp() {
+    spec = new RequestSpecBuilder().setPort(port).addFilter(
+      documentationConfiguration(this.restDocumentation))
+      .build();
+  }
+
 
   @Test
-  public void createUser() throws Exception {
+  public void createUser() {
 
     final CreateUserRequest request = ImmutableCreateUserRequest.builder()
       .name("some-name")
       .about("blah blah blah")
       .build();
 
-    mvc.perform(
-      post(UserController.CREATE_PATH)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(mapper.writeValueAsBytes(request))
-        .accept(MediaType.APPLICATION_JSON))
-      .andExpect(status().isOk())
-      .andDo(document("create-user",
-        wiremockJson(),
-        requestFields(
-          fieldWithPath("name").description("Name description"),
-          fieldWithPath("about").description("About description")
-        ),
-        responseFields(
-          fieldWithPath("name").description("Name description"),
-          fieldWithPath("about").description("About description"),
-          fieldWithPath("createdAt").description("CreatedAt description")
+    given(spec)
+      .log().all()
+      .filter(
+        document("create-user",
+          wiremockJson(),
+          requestFields(
+            fieldWithPath("name").description("Name description"),
+            fieldWithPath("about").description("About description")
+          ),
+          responseFields(
+            fieldWithPath("name").description("Name description"),
+            fieldWithPath("about").description("About description"),
+            fieldWithPath("createdAt").description("CreatedAt description")
+          )
         )
-      ));
+      ).when()
+      .accept(ContentType.JSON)
+      .contentType(ContentType.JSON)
+      .body(request)
+      .post(UserController.CREATE_PATH)
+      .then()
+      .assertThat()
+      .statusCode(200);
+
   }
 
   @Test
-  public void detailUser() throws Exception {
+  public void userDetail() {
 
-    mvc.perform(
-      get(UserController.DETAIL_PATH, "2345")
-        .accept(MediaType.APPLICATION_JSON))
-      .andExpect(status().isOk())
-      .andDo(document("user-detail",
-        wiremockJson(),
-        pathParameters(
-          parameterWithName("userId").description("Id of user")
-        ),
-        responseFields(
-          fieldWithPath("name").description("Name description"),
-          fieldWithPath("about").description("About description"),
-          fieldWithPath("createdAt").description("CreatedAt description")
+    given(spec)
+      .filter(
+        document("user-detail",
+          wiremockJson(),
+          pathParameters(
+            parameterWithName("userId").description("Id of user")
+          ),
+          responseFields(
+            fieldWithPath("name").description("Name description"),
+            fieldWithPath("about").description("About description"),
+            fieldWithPath("createdAt").description("CreatedAt description")
+          )
         )
-      ));
+      )
+      .log().all()
+      .when()
+      .accept(ContentType.JSON)
+      .get(UserController.DETAIL_PATH, "2345")
+      .then()
+      .log().all()
+      .assertThat()
+      .statusCode(200);
   }
 
 }
